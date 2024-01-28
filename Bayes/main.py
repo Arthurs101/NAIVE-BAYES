@@ -1,12 +1,16 @@
 import pandas as pd
+from cleaner import *
 from sklearn.feature_extraction.text import CountVectorizer
 from model import NaiveBayes
+
+
 #read the file using pandas
 df = pd.read_csv("entrenamiento.txt",delimiter="\t", header=None , names=["status","message"])
 features_vector = CountVectorizer()
 #extract the features as a CountVectorizer
-words_vector  =  features_vector.fit_transform(df["message"].values)
-X = pd.DataFrame(words_vector.toarray()) 
+messages = df["message"].tolist()
+messages = proccess_message(messages)
+#clean the messages
 
 #calculate the train index
 train_index = int(len(df)*0.8)
@@ -19,6 +23,6 @@ Y_train = Y_train.values
 
 agent = NaiveBayes()
 
-agent.fitModel(X_train, Y_train)
-print(X) 
+# agent.fitModel(X_train, Y_train)
+# print(X) 
 
