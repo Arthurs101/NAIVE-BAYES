@@ -1,79 +1,44 @@
-import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, roc_auc_score, precision_score, recall_score, f1_score
 
-filename = "C:\\Users\\HP OMEN\\OneDrive\\Desktop\\Programs\\AI\\Lab2high_diamond_ranked_10min.csv"
+# Cargar el dataset
+file_path = "high_diamond_ranked_10min.csv"  # Reemplaza con la ruta correcta a tu archivo
+data = pd.read_csv(file_path)
 
-# Load data from CSV
-def load_data(filename):
-    data = np.genfromtxt(filename, delimiter=',', skip_header=1)
-    X = data[:, 1:]  # Assuming your data starts from the second column
-    y = data[:, 0]   # Assuming the first column is the target variable
+# Eliminar la columna 'gameId'
+data = data.drop(columns=['gameId'])
 
-    # Convert y to binary (0 or 1)
-    y = (y > 0).astype(int)
+# Separar la variable objetivo y las características
+X = data.drop('blueWins', axis=1)
+y = data['blueWins']
 
-    return X, y
+# Escalar las características
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
 
-# SVM class definition
-class SVM:
-    def __init__(self, learning_rate=0.01, lambda_param=0.01, num_epochs=1000):
-        self.learning_rate = learning_rate
-        self.lambda_param = lambda_param
-        self.num_epochs = num_epochs
-        self.weights = None
-        self.bias = None
+# Dividir el dataset en conjuntos de entrenamiento y prueba
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
 
-    def train(self, X, y):
-        # Initialize weights and bias
-        num_samples, num_features = X.shape
-        self.weights = np.zeros(num_features)
-        self.bias = 0
+# Crear y entrenar el modelo de Regresión Logística
+logistic_model = LogisticRegression()
+logistic_model.fit(X_train, y_train)
 
-        # Gradient descent
-        for epoch in range(self.num_epochs):
-            # Compute SVM loss and gradients
-            loss, dw, db = self.compute_loss_and_gradients(X, y)
+# Realizar predicciones en el conjunto de prueba
+y_pred = logistic_model.predict(X_test)
 
-            # Update weights and bias
-            self.weights -= self.learning_rate * dw
-            self.bias -= self.learning_rate * db
+# Evaluar el modelo
+accuracy = accuracy_score(y_test, y_pred)
+roc_auc = roc_auc_score(y_test, y_pred)
+precision = precision_score(y_test, y_pred)
+recall = recall_score(y_test, y_pred)
+f1 = f1_score(y_test, y_pred)
 
-            # Print loss every 100 epochs
-            if epoch % 100 == 0:
-                print(f"Epoch {epoch}, Loss: {loss}")
-
-    def compute_loss_and_gradients(self, X, y):
-        num_samples = X.shape[0]
-
-        # Compute SVM loss
-        scores = np.dot(X, self.weights) + self.bias
-        margins = 1 - y * scores
-        margins = np.maximum(0, margins)
-        loss = np.sum(margins) / num_samples + 0.5 * self.lambda_param * np.sum(self.weights**2)
-
-        # Compute gradients
-        margins[margins > 0] = 1
-        incorrect_classifications = np.sum(margins, axis=0)
-        margins[y.astype(int)] -= incorrect_classifications
-        dw = np.dot(X.T, margins) / num_samples + self.lambda_param * self.weights
-        db = np.sum(margins) / num_samples
-
-        return loss, dw, db
-
-    def predict(self, X):
-        scores = np.dot(X, self.weights) + self.bias
-        return np.sign(scores)
-
-# Main part
-if __name__ == "__main__":
-    # Load data
-    filename = "high_diamond_ranked_10min.csv"
-    X, y = load_data(filename)
-
-    # Initialize and train SVM
-    svm = SVM()
-    svm.train(X, y)
-
-    # Make predictions
-    predictions = svm.predict(X)
-    accuracy = np.mean(predictions == y)
-    print(f"Accuracy: {accuracy}")
+# Imprimir los resultados de las métricas
+print(f"Accuracy: {accuracy}")
+print(f"ROC-AUC: {roc_auc}")
+print(f"Precision: {precision}")
+print(f"Recall: {recall}")
+print(f"F1 Score: {f1}")
